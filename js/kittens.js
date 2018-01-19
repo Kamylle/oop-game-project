@@ -9,17 +9,25 @@ var MAX_ENEMIES = 3;
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 
+var HEART_WIDTH = 75;
+var HEART_HEIGHT = 75;
+var MAX_HEARTS = 1
+
 // These two constants keep us from using "magic numbers" in our code
 var LEFT_ARROW_CODE = 37;
 var RIGHT_ARROW_CODE = 39;
+var SPACEBAR_CODE = 33;
 
 // These two constants allow us to DRY
 var MOVE_LEFT = 'left';
 var MOVE_RIGHT = 'right';
 
+// Speed Variation
+var speedIncrease = 0.25;
+
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png'].forEach(imgName => {
+['enemy.png', 'stars.png', 'player.png', 'heart.png', 'bigheart.png'].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -32,7 +40,9 @@ class Entity {
     render(ctx) {
         ctx.drawImage(this.sprite, this.x, this.y);
     }
-
+    update(timeDiff) {
+        this.y = this.y + timeDiff * this.speed;
+    }
 }
 class Enemy extends Entity{
     constructor(xPos) {
@@ -42,11 +52,20 @@ class Enemy extends Entity{
         this.sprite = images['enemy.png'];
 
         // Each enemy should have a different speed
-        this.speed = Math.random() / 2 + 0.25;
+        //this.speed = Math.random() / 2 + 0.25; //Original Speed
+        this.speed = Math.random() / 3 + speedIncrease;
     }
+}
+class Heart extends Entity{
+    constructor(xPos) {
+        super();
+        this.x = xPos;
+        this.y = -ENEMY_HEIGHT;
+        this.sprite = images['bigheart.png'];
 
-    update(timeDiff) {
-        this.y = this.y + timeDiff * this.speed;
+        // Each enemy should have a different speed
+        //this.speed = Math.random() / 2 + 0.25; //Original Speed
+        this.speed = Math.random() / 4 + speedIncrease;
     }
 }
 
@@ -128,6 +147,7 @@ class Engine {
     // This method kicks off the game
     start() {
         this.score = 0;
+        this.lives = 3;
         this.lastFrame = Date.now();
 
         // Listen for keyboard left/right and update the player
@@ -137,6 +157,9 @@ class Engine {
             }
             else if (e.keyCode === RIGHT_ARROW_CODE) {
                 this.player.move(MOVE_RIGHT);
+            }
+            else {
+                location.reload();
             }
         });
 
@@ -173,12 +196,13 @@ class Engine {
         this.enemies.forEach((enemy, enemyIdx) => {
             if (enemy.y > GAME_HEIGHT) {
                 delete this.enemies[enemyIdx];
+                speedIncrease = speedIncrease + 0.005;
             }
         });
         this.setupEnemies();
 
         // Check if player is dead
-        if (this.isPlayerDead()) {
+        if (this.isPlayerDead() && this.lives == 0) {
             // If they are dead, then it's game over!
             this.ctx.font = 'bold 20px Arial';
             this.ctx.fillStyle = '#ffffff';
@@ -186,6 +210,13 @@ class Engine {
         }
         else {
             // If player is not dead, then draw the score
+            this.ctx.drawImage(images['heart.png'], 20, 55);
+            if (this.lives > 1) {
+                this.ctx.drawImage(images['heart.png'], 60, 55);
+                if (this.lives > 2) {
+                    this.ctx.drawImage(images['heart.png'], 100, 55);
+                }
+            }
             this.ctx.font = 'bold 20px Arial';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score, 20, 40);
@@ -195,16 +226,16 @@ class Engine {
             requestAnimationFrame(this.gameLoop);
         }
 
-        // Lives
 
     }
 
     isPlayerDead() {
-        // TODO: fix this function!
         var isDead = false;
         this.enemies.forEach((enemy, enemyIdx) => {
             if (enemy.x == this.player.x) {
                 if (enemy.y + 120 >= this.player.y) {
+                    delete this.enemies[enemyIdx]
+                    this.lives = this.lives - 1;
                     isDead = true;
                 }
             }
