@@ -30,16 +30,22 @@ var MOVE_RIGHT = 'right';
 // Speed Variation
 var speedIncrease = 0.25;
 
-// Speed Variation
+// Animations
 var explosionTimeout = 0;
+var animationFrames = 20;
+var animationLoop = animationFrames;
+var animationSwitch = true;
 
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png', 'heart.png', 'bigheart.png', 'explosion.png'].forEach(imgName => {
+['enemy.png', 'stars.png', 'player.png', 'heart.png', 'bigheart.png', 'explosion.png', 'playerSprite.png'].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
 });
+
+
+
 
 
 // This section is where you will be doing most of your coding
@@ -87,7 +93,13 @@ class Player extends Entity{
         this.width = PLAYER_WIDTH;
         this.height = PLAYER_HEIGHT;
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
-        this.sprite = images['player.png'];
+        this.sprite = images['playerSprite.png'];
+    }
+
+    //ANim Test
+    render(ctx) {
+        var framex = (animationSwitch ? 0 : this.width);
+        ctx.drawImage(this.sprite, framex, 0, this.width, this.height, this.x, this.y, this.width, this.height,);
     }
 
     // This method is called by the game engine when left/right arrows are pressed
@@ -108,13 +120,6 @@ class Player extends Entity{
         return colliding;
     };
 }
-
-/*
-The x position of the ball is greater than the x position of the brick.
-The x position of the ball is less than the x position of the brick plus its width.
-The y position of the ball is greater than the y position of the brick.
-The y position of the ball is less than the y position of the brick plus its height.
-*/
 
 
 
@@ -294,24 +299,16 @@ class Engine {
             this.lastFrame = Date.now();
             requestAnimationFrame(this.gameLoop);
         }
+
+        // var explosionTimeout = 0;
+        // var animationLoop = 20;
+        // var animationSwitch = true;
+        animationLoop = animationLoop - 1;
+        if (animationLoop <= 0) {
+            animationSwitch = !animationSwitch;
+            animationLoop = animationFrames;
+        }
     }
-    /*
-    isPlayerDead() {
-        var isDead = false;
-        this.enemies.forEach((enemy, enemyIdx) => {
-            if (enemy.x == this.player.x) {
-                if (enemy.y + 120 >= this.player.y) {
-                    delete this.enemies[enemyIdx];
-                    this.lives = this.lives - 1;
-                    isDead = true;
-                    this.ctx.drawImage(images['explosion.png'], this.player.x, this.player.y);
-                    this.explosionTimeout = 30;
-                }
-            }
-        })
-        return isDead;
-    }
-    */
 
     isPlayerDead() {
         var isDead = false;
