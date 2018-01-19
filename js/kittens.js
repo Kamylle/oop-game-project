@@ -27,11 +27,17 @@ var images = {};
 
 
 
-
-
 // This section is where you will be doing most of your coding
-class Enemy {
+
+class Entity {
+    render(ctx) {
+        ctx.drawImage(this.sprite, this.x, this.y);
+    }
+
+}
+class Enemy extends Entity{
     constructor(xPos) {
+        super();
         this.x = xPos;
         this.y = -ENEMY_HEIGHT;
         this.sprite = images['enemy.png'];
@@ -43,14 +49,11 @@ class Enemy {
     update(timeDiff) {
         this.y = this.y + timeDiff * this.speed;
     }
-
-    render(ctx) {
-        ctx.drawImage(this.sprite, this.x, this.y);
-    }
 }
 
-class Player {
+class Player extends Entity{
     constructor() {
+        super();
         this.x = 2 * PLAYER_WIDTH;
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
         this.sprite = images['player.png'];
@@ -64,10 +67,6 @@ class Player {
         else if (direction === MOVE_RIGHT && this.x < GAME_WIDTH - PLAYER_WIDTH) {
             this.x = this.x + PLAYER_WIDTH;
         }
-    }
-
-    render(ctx) {
-        ctx.drawImage(this.sprite, this.x, this.y);
     }
 }
 
@@ -182,13 +181,13 @@ class Engine {
         // Check if player is dead
         if (this.isPlayerDead()) {
             // If they are dead, then it's game over!
-            this.ctx.font = 'bold 30px Impact';
+            this.ctx.font = 'bold 30px Press Start 2P';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score + ' GAME OVER', 5, 30);
         }
         else {
             // If player is not dead, then draw the score
-            this.ctx.font = 'bold 30px Impact';
+            this.ctx.font = 'bold 30px Press Start 2P';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score, 5, 30);
 
@@ -200,7 +199,15 @@ class Engine {
 
     isPlayerDead() {
         // TODO: fix this function!
-        return false;
+        var isDead = false;
+        this.enemies.forEach((enemy, enemyIdx) => {
+            if (enemy.x == this.player.x) {
+                if (enemy.y + 120 >= this.player.y) {
+                    isDead = true;
+                }
+            }
+        })
+        return isDead;
     }
 }
 
