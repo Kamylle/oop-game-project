@@ -9,6 +9,7 @@ var MAX_ENEMIES = 3;
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 var MAX_LIVES = 3;
+var STARTING_LIVES = 3;
 
 var ITEM_WIDTH = 75;
 var ITEM_HEIGHT = 75;
@@ -57,6 +58,8 @@ class Enemy extends Entity{
         this.x = xPos;
         this.y = -ENEMY_HEIGHT;
         this.sprite = images['enemy.png'];
+        this.width = ENEMY_WIDTH;
+        this.height = ENEMY_HEIGHT;
 
         // Each enemy should have a different speed
         //this.speed = Math.random() / 2 + 0.25; //Original Speed
@@ -69,6 +72,8 @@ class Item extends Entity{
         super();
         this.x = xPos;
         this.y = -ITEM_HEIGHT;
+        this.width = ITEM_WIDTH;
+        this.height = ITEM_HEIGHT;
         this.sprite = images['bigheart.png'];
         //this.speed = Math.random() / 2 + 0.25; //Original Speed
         this.speed = Math.random() / 4 + speedIncrease;
@@ -79,6 +84,8 @@ class Player extends Entity{
     constructor() {
         super();
         this.x = 2 * PLAYER_WIDTH;
+        this.width = PLAYER_WIDTH;
+        this.height = PLAYER_HEIGHT;
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
         this.sprite = images['player.png'];
     }
@@ -92,7 +99,22 @@ class Player extends Entity{
             this.x = this.x + PLAYER_WIDTH;
         }
     }
+
+    doCollide(obj) {
+        var colliding = false;
+        if (this.x == obj.x && this.y > obj.y && this.y < obj.y + obj.height) {
+            colliding = true;
+        }
+        return colliding;
+    };
 }
+
+/*
+The x position of the ball is greater than the x position of the brick.
+The x position of the ball is less than the x position of the brick plus its width.
+The y position of the ball is greater than the y position of the brick.
+The y position of the ball is less than the y position of the brick plus its height.
+*/
 
 
 
@@ -174,7 +196,7 @@ class Engine {
     // This method kicks off the game
     start() {
         this.score = 0;
-        this.lives = 3;
+        this.lives = STARTING_LIVES;
         this.lastFrame = Date.now();
 
         // Listen for keyboard left/right and update the player
@@ -251,7 +273,7 @@ class Engine {
         // Check if player is dead
         if (this.isPlayerDead() && this.lives == 0) {
             // If they are dead, then it's game over!
-            this.ctx.font = 'bold 20px Arial';
+            this.ctx.font = 'bold 26px "Londrina Solid"';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score + ' GAME OVER', 20, 40);
         }
@@ -264,7 +286,7 @@ class Engine {
                     this.ctx.drawImage(images['heart.png'], 100, 55);
                 }
             }
-            this.ctx.font = 'bold 20px Arial';
+            this.ctx.font = 'bold 26px "Londrina Solid"';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score, 20, 40);
 
@@ -273,11 +295,7 @@ class Engine {
             requestAnimationFrame(this.gameLoop);
         }
     }
-
-    doCollide(first, second){
-
-    }
-
+    /*
     isPlayerDead() {
         var isDead = false;
         this.enemies.forEach((enemy, enemyIdx) => {
@@ -293,15 +311,28 @@ class Engine {
         })
         return isDead;
     }
+    */
+
+    isPlayerDead() {
+        var isDead = false;
+        this.enemies.forEach((enemy, enemyIdx) => {
+            if (this.player.doCollide(enemy)) {
+                    delete this.enemies[enemyIdx];
+                    this.lives = this.lives - 1;
+                    isDead = true;
+                    this.ctx.drawImage(images['explosion.png'], this.player.x, this.player.y);
+                    this.explosionTimeout = 30;
+            }
+        })
+        return isDead;
+    }
 
     gainLife() {
         if (this.lives < MAX_LIVES) {
             this.items.forEach((item, itemIdx) => {
-                if (item.x == this.player.x) {
-                    if (item.y >= this.player.y) {
-                        delete this.items[itemIdx];
-                        this.lives = this.lives + 1;
-                    }
+                if (this.player.doCollide(item)) {
+                    delete this.items[itemIdx];
+                    this.lives = this.lives + 1;
                 }
             })
         }
