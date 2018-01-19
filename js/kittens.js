@@ -26,7 +26,6 @@ var images = {};
 });
 
 
-
 // This section is where you will be doing most of your coding
 
 class Entity {
@@ -181,20 +180,23 @@ class Engine {
         // Check if player is dead
         if (this.isPlayerDead()) {
             // If they are dead, then it's game over!
-            this.ctx.font = 'bold 30px Press Start 2P';
+            this.ctx.font = 'bold 20px Arial';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(this.score + ' GAME OVER', 5, 30);
+            this.ctx.fillText(this.score + ' GAME OVER', 20, 40);
         }
         else {
             // If player is not dead, then draw the score
-            this.ctx.font = 'bold 30px Press Start 2P';
+            this.ctx.font = 'bold 20px Arial';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(this.score, 5, 30);
+            this.ctx.fillText(this.score, 20, 40);
 
             // Set the time marker and redraw
             this.lastFrame = Date.now();
             requestAnimationFrame(this.gameLoop);
         }
+
+        // Lives
+
     }
 
     isPlayerDead() {
