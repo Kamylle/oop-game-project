@@ -38,7 +38,7 @@ var animationSwitch = true;
 
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png', 'heart.png', 'bigheart.png', 'explosion.png', 'playerSprite.png'].forEach(imgName => {
+['enemy.png', 'stars.png', 'player.png', 'heart.png', 'bigheart.png', 'explosion.png',].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -52,7 +52,8 @@ var images = {};
 
 class Entity {
     render(ctx) {
-        ctx.drawImage(this.sprite, this.x, this.y);
+        var framex = (animationSwitch ? 0 : this.width);
+        ctx.drawImage(this.sprite, framex, 0, this.width, this.height, this.x, this.y, this.width, this.height,);
     }
     update(timeDiff) {
         this.y = this.y + timeDiff * this.speed;
@@ -93,14 +94,10 @@ class Player extends Entity{
         this.width = PLAYER_WIDTH;
         this.height = PLAYER_HEIGHT;
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
-        this.sprite = images['playerSprite.png'];
+        this.sprite = images['player.png'];
     }
 
-    //ANim Test
-    render(ctx) {
-        var framex = (animationSwitch ? 0 : this.width);
-        ctx.drawImage(this.sprite, framex, 0, this.width, this.height, this.x, this.y, this.width, this.height,);
-    }
+
 
     // This method is called by the game engine when left/right arrows are pressed
     move(direction) {
@@ -300,10 +297,9 @@ class Engine {
             requestAnimationFrame(this.gameLoop);
         }
 
-        // var explosionTimeout = 0;
-        // var animationLoop = 20;
-        // var animationSwitch = true;
+        //Animations Frames
         animationLoop = animationLoop - 1;
+
         if (animationLoop <= 0) {
             animationSwitch = !animationSwitch;
             animationLoop = animationFrames;
