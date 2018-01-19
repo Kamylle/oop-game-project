@@ -8,10 +8,14 @@ var MAX_ENEMIES = 3;
 
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
+var MAX_LIVES = 3;
 
-var HEART_WIDTH = 75;
-var HEART_HEIGHT = 75;
-var MAX_HEARTS = 1
+var ITEM_WIDTH = 75;
+var ITEM_HEIGHT = 75;
+var MAX_ITEMS = 1;
+
+var EXPLOSION_WIDTH = 75;
+var EXPLOSION_HEIGHT = 75;
 
 // These two constants keep us from using "magic numbers" in our code
 var LEFT_ARROW_CODE = 37;
@@ -25,9 +29,12 @@ var MOVE_RIGHT = 'right';
 // Speed Variation
 var speedIncrease = 0.25;
 
+// Speed Variation
+var explosionTimeout = 0;
+
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png', 'heart.png', 'bigheart.png'].forEach(imgName => {
+['enemy.png', 'stars.png', 'player.png', 'heart.png', 'bigheart.png', 'explosion.png'].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -56,14 +63,13 @@ class Enemy extends Entity{
         this.speed = Math.random() / 3 + speedIncrease;
     }
 }
-class Heart extends Entity{
+
+class Item extends Entity{
     constructor(xPos) {
         super();
         this.x = xPos;
-        this.y = -ENEMY_HEIGHT;
+        this.y = -ITEM_HEIGHT;
         this.sprite = images['bigheart.png'];
-
-        // Each enemy should have a different speed
         //this.speed = Math.random() / 2 + 0.25; //Original Speed
         this.speed = Math.random() / 4 + speedIncrease;
     }
@@ -90,8 +96,6 @@ class Player extends Entity{
 
 
 
-
-
 /*
 This section is a tiny game engine.
 This engine will use your Enemy and Player classes to create the behavior of the game.
@@ -104,6 +108,7 @@ class Engine {
 
         // Setup enemies, making sure there are always three
         this.setupEnemies();
+        this.setupItems();
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -142,6 +147,28 @@ class Engine {
         }
 
         this.enemies[enemySpot] = new Enemy(enemySpot * ENEMY_WIDTH);
+    }
+
+    setupItems() {
+        if (!this.items) {
+            this.items = [];
+        }
+
+        while (this.items.filter(e => !!e).length < MAX_ITEMS) {
+            this.addItem();
+        }
+    }
+
+    addItem() {
+        var itemSpots = GAME_WIDTH / ITEM_WIDTH;
+
+        var itemSpot;
+        
+        while (itemSpot == undefined || this.items[itemSpot]) {
+            itemSpot = Math.floor(Math.random() * itemSpots);
+        }
+
+        this.items[itemSpot] = new Item(itemSpot * ITEM_WIDTH);
     }
 
     // This method kicks off the game
@@ -186,10 +213,12 @@ class Engine {
 
         // Call update on all enemies
         this.enemies.forEach(enemy => enemy.update(timeDiff));
+        this.items.forEach(item => item.update(timeDiff));
 
         // Draw everything!
         this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
         this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
+        this.items.forEach(item => item.render(this.ctx)); // draw the Items
         this.player.render(this.ctx); // draw the player
 
         // Check if any enemies should die
@@ -200,6 +229,24 @@ class Engine {
             }
         });
         this.setupEnemies();
+
+
+        // Check if any item should disapear
+        this.items.forEach((item, itemIdx) => {
+            if (item.y > GAME_HEIGHT) {
+                delete this.items[itemIdx];
+                speedIncrease = speedIncrease + 0.005;
+            }
+        });
+        this.setupItems();
+
+        this.gainLife();
+
+        // Check if the player is exploding
+        if (this.explosionTimeout > 0) {
+            this.ctx.drawImage(images['explosion.png'], this.player.x, this.player.y);
+            this.explosionTimeout = this.explosionTimeout - 1
+        }
 
         // Check if player is dead
         if (this.isPlayerDead() && this.lives == 0) {
@@ -225,7 +272,9 @@ class Engine {
             this.lastFrame = Date.now();
             requestAnimationFrame(this.gameLoop);
         }
+    }
 
+    doCollide(first, second){
 
     }
 
@@ -234,13 +283,28 @@ class Engine {
         this.enemies.forEach((enemy, enemyIdx) => {
             if (enemy.x == this.player.x) {
                 if (enemy.y + 120 >= this.player.y) {
-                    delete this.enemies[enemyIdx]
+                    delete this.enemies[enemyIdx];
                     this.lives = this.lives - 1;
                     isDead = true;
+                    this.ctx.drawImage(images['explosion.png'], this.player.x, this.player.y);
+                    this.explosionTimeout = 30;
                 }
             }
         })
         return isDead;
+    }
+
+    gainLife() {
+        if (this.lives < MAX_LIVES) {
+            this.items.forEach((item, itemIdx) => {
+                if (item.x == this.player.x) {
+                    if (item.y >= this.player.y) {
+                        delete this.items[itemIdx];
+                        this.lives = this.lives + 1;
+                    }
+                }
+            })
+        }
     }
 }
 
