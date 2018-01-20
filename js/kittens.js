@@ -9,7 +9,7 @@ var MAX_ENEMIES = 3;
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 var MAX_LIVES = 3;
-var STARTING_LIVES = 10000000; //3
+var STARTING_LIVES = 3;
 
 var ITEM_WIDTH = 75;
 var ITEM_HEIGHT = 75;
@@ -29,12 +29,12 @@ var MOVE_LEFT = 'left';
 var MOVE_RIGHT = 'right';
 
 // Speed Variation
-var speedIncrease = 0; //0.25
+var speedIncrease = 0.25;
 
 // Animations
 var explosionTimeout = 0;
-var animationFrames = 20;
-var animationLoop = animationFrames;
+var animationSpeed = 300;
+var timeSinceSwitch = 0;
 var animationSwitch = true;
 
 // Preload game images
@@ -297,6 +297,7 @@ class Engine {
         this.bullets.forEach((bullet, bulletIdx) => {
             if (bullet.y < - GAME_HEIGHT) {
                 delete this.bullets[bulletIdx];
+                this.bullets.splice(1,bulletIdx);
             }
         });
 
@@ -341,11 +342,11 @@ class Engine {
         }
 
         //Animations Frames
-        animationLoop = animationLoop - 1;
+        timeSinceSwitch = timeSinceSwitch + timeDiff;
 
-        if (animationLoop <= 0) {
+        if (timeSinceSwitch >= animationSpeed) {
             animationSwitch = !animationSwitch;
-            animationLoop = animationFrames;
+            timeSinceSwitch = timeSinceSwitch - animationSpeed;
         }
     }
 
