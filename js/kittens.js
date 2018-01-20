@@ -52,13 +52,14 @@ var images = {};
 
 class Entity {
     render(ctx) {
-        var framex = (animationSwitch ? 0 : this.width);
-        ctx.drawImage(this.sprite, framex, 0, this.width, this.height, this.x, this.y, this.width, this.height,);
+        var frameX = (animationSwitch ? 0 : this.width);
+        ctx.drawImage(this.sprite, frameX, 0, this.width, this.height, this.x, this.y, this.width, this.height,);
     }
     update(timeDiff) {
         this.y = this.y + timeDiff * this.speed;
     }
 }
+
 class Enemy extends Entity{
     constructor(xPos) {
         super();
@@ -82,7 +83,6 @@ class Item extends Entity{
         this.width = ITEM_WIDTH;
         this.height = ITEM_HEIGHT;
         this.sprite = images['bigheart.png'];
-        //this.speed = Math.random() / 2 + 0.25; //Original Speed
         this.speed = Math.random() / 4 + speedIncrease;
     }
 }
@@ -249,7 +249,7 @@ class Engine {
         this.enemies.forEach((enemy, enemyIdx) => {
             if (enemy.y > GAME_HEIGHT) {
                 delete this.enemies[enemyIdx];
-                speedIncrease = speedIncrease + 0.005;
+                speedIncrease = speedIncrease + 0.004;
             }
         });
         this.setupEnemies();
@@ -268,16 +268,20 @@ class Engine {
 
         // Check if the player is exploding
         if (this.explosionTimeout > 0) {
-            this.ctx.drawImage(images['explosion.png'], this.player.x, this.player.y);
-            this.explosionTimeout = this.explosionTimeout - 1
+            this.ctx.drawImage(images['explosion.png'], 0, 0, 75, 75, this.player.x, this.player.y, 75, 75,);
+            this.explosionTimeout = this.explosionTimeout - 1;
         }
 
         // Check if player is dead
         if (this.isPlayerDead() && this.lives == 0) {
             // If they are dead, then it's game over!
-            this.ctx.font = 'bold 26px "Londrina Solid"';
+            this.ctx.font = '26px "Oswald"';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(this.score + ' GAME OVER', 20, 40);
+            this.ctx.fillText('Score : ' + this.score, 40, 250);
+
+            this.ctx.font = '50px "Oswald"';
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText('GAME OVER', 40, 220);
         }
         else {
             // If player is not dead, then draw the score
@@ -288,7 +292,7 @@ class Engine {
                     this.ctx.drawImage(images['heart.png'], 100, 55);
                 }
             }
-            this.ctx.font = 'bold 26px "Londrina Solid"';
+            this.ctx.font = '30px "Oswald"';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score, 20, 40);
 
@@ -313,7 +317,6 @@ class Engine {
                     delete this.enemies[enemyIdx];
                     this.lives = this.lives - 1;
                     isDead = true;
-                    this.ctx.drawImage(images['explosion.png'], this.player.x, this.player.y);
                     this.explosionTimeout = 30;
             }
         })
