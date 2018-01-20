@@ -21,6 +21,7 @@ var EXPLOSION_HEIGHT = 75;
 // These two constants keep us from using "magic numbers" in our code
 var LEFT_ARROW_CODE = 37;
 var RIGHT_ARROW_CODE = 39;
+var TOP_ARROW_CODE = 38;
 var SPACEBAR_CODE = 33;
 
 // These two constants allow us to DRY
@@ -38,7 +39,7 @@ var animationSwitch = true;
 
 // Preload game images
 var images = {};
-['enemy.png', 'stars.png', 'player.png', 'heart.png', 'bigheart.png', 'explosion.png',].forEach(imgName => {
+['enemy.png', 'player.png', 'heart.png', 'noheart.png', 'bigheart.png', 'explosion.png', 'bg.png',].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -115,7 +116,11 @@ class Player extends Entity{
             colliding = true;
         }
         return colliding;
-    };
+    }
+
+    shoot() {
+        
+    }
 }
 
 
@@ -209,6 +214,9 @@ class Engine {
             else if (e.keyCode === RIGHT_ARROW_CODE) {
                 this.player.move(MOVE_RIGHT);
             }
+            else if (e.keyCode === TOP_ARROW_CODE) {
+                this.player.shoot();
+            }
             else {
                 location.reload();
             }
@@ -228,6 +236,7 @@ class Engine {
     You should use this parameter to scale your update appropriately
      */
     gameLoop() {
+        this.ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
         // Check how long it's been since last frame
         var currentFrame = Date.now();
         var timeDiff = currentFrame - this.lastFrame;
@@ -240,7 +249,7 @@ class Engine {
         this.items.forEach(item => item.update(timeDiff));
 
         // Draw everything!
-        this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
+        this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
         this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
         this.items.forEach(item => item.render(this.ctx)); // draw the Items
         this.player.render(this.ctx); // draw the player
@@ -274,25 +283,24 @@ class Engine {
 
         // Check if player is dead
         if (this.isPlayerDead() && this.lives == 0) {
+            this.ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
             // If they are dead, then it's game over!
-            this.ctx.font = '26px "Oswald"';
+            this.ctx.font = '300 26px "Oswald"';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText('Score : ' + this.score, 40, 250);
 
-            this.ctx.font = '50px "Oswald"';
+            this.ctx.font = '500 50px "Oswald"';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText('GAME OVER', 40, 220);
         }
         else {
             // If player is not dead, then draw the score
-            this.ctx.drawImage(images['heart.png'], 20, 55);
-            if (this.lives > 1) {
-                this.ctx.drawImage(images['heart.png'], 60, 55);
-                if (this.lives > 2) {
-                    this.ctx.drawImage(images['heart.png'], 100, 55);
-                }
-            }
-            this.ctx.font = '30px "Oswald"';
+            this.ctx.drawImage( this.lives > 0 ? images['heart.png'] : images['noheart.png'], 20, 55);
+            this.ctx.drawImage( this.lives > 1 ? images['heart.png'] : images['noheart.png'], 60, 55);
+            this.ctx.drawImage( this.lives > 2 ? images['heart.png'] : images['noheart.png'], 100, 55);
+
+            this.ctx.font = '500 30px "Oswald"';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score, 20, 40);
 
@@ -332,6 +340,10 @@ class Engine {
                 }
             })
         }
+    }
+
+    shootBullets() {
+
     }
 }
 
