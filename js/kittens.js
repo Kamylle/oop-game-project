@@ -9,7 +9,7 @@ var MAX_ENEMIES = 3;
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 var MAX_LIVES = 3;
-var STARTING_LIVES = 3;
+var STARTING_LIVES = 10000000; //3
 
 var ITEM_WIDTH = 75;
 var ITEM_HEIGHT = 75;
@@ -29,7 +29,7 @@ var MOVE_LEFT = 'left';
 var MOVE_RIGHT = 'right';
 
 // Speed Variation
-var speedIncrease = 0.25;
+var speedIncrease = 0; //0.25
 
 // Animations
 var explosionTimeout = 0;
@@ -39,7 +39,7 @@ var animationSwitch = true;
 
 // Preload game images
 var images = {};
-['enemy.png', 'player.png', 'heart.png', 'noheart.png', 'bigheart.png', 'explosion.png', 'bg.png',].forEach(imgName => {
+['enemy.png', 'player.png', 'heart.png', 'noheart.png', 'bigheart.png', 'explosion.png', 'bg.png', 'bullet.png',].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -58,6 +58,13 @@ class Entity {
     }
     update(timeDiff) {
         this.y = this.y + timeDiff * this.speed;
+    }
+    doCollide(obj) {
+        var colliding = false;
+        if (this.x == obj.x && this.y > obj.y && this.y < obj.y + obj.height) {
+            colliding = true;
+        }
+        return colliding;
     }
 }
 
@@ -88,6 +95,18 @@ class Item extends Entity{
     }
 }
 
+class Bullet extends Entity{
+    constructor(xPos) {
+        super();
+        this.x = xPos;
+        this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
+        this.width = ITEM_WIDTH;
+        this.height = ITEM_HEIGHT;
+        this.sprite = images['bullet.png'];
+        this.speed = - 3;
+    }
+}
+
 class Player extends Entity{
     constructor() {
         super();
@@ -109,18 +128,6 @@ class Player extends Entity{
             this.x = this.x + PLAYER_WIDTH;
         }
     }
-
-    doCollide(obj) {
-        var colliding = false;
-        if (this.x == obj.x && this.y > obj.y && this.y < obj.y + obj.height) {
-            colliding = true;
-        }
-        return colliding;
-    }
-
-    shoot() {
-        
-    }
 }
 
 
@@ -138,6 +145,7 @@ class Engine {
         // Setup enemies, making sure there are always three
         this.setupEnemies();
         this.setupItems();
+        this.setupBullets();
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -200,6 +208,17 @@ class Engine {
         this.items[itemSpot] = new Item(itemSpot * ITEM_WIDTH);
     }
 
+    setupBullets(){
+        if (!this.bullets) {
+            this.bullets = [];
+        }
+    }
+
+    addBullet() {
+        this.bullets[this.bullets.length] = new Bullet(this.player.x);
+    }
+        
+
     // This method kicks off the game
     start() {
         this.score = 0;
@@ -215,7 +234,7 @@ class Engine {
                 this.player.move(MOVE_RIGHT);
             }
             else if (e.keyCode === TOP_ARROW_CODE) {
-                this.player.shoot();
+                this.addBullet();
             }
             else {
                 location.reload();
@@ -247,11 +266,13 @@ class Engine {
         // Call update on all enemies
         this.enemies.forEach(enemy => enemy.update(timeDiff));
         this.items.forEach(item => item.update(timeDiff));
+        this.bullets.forEach(bullet => bullet.update(timeDiff));
 
         // Draw everything!
         this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
         this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
         this.items.forEach(item => item.render(this.ctx)); // draw the Items
+        this.bullets.forEach(bullet => bullet.render(this.ctx)); // draw the Items
         this.player.render(this.ctx); // draw the player
 
         // Check if any enemies should die
@@ -268,10 +289,20 @@ class Engine {
         this.items.forEach((item, itemIdx) => {
             if (item.y > GAME_HEIGHT) {
                 delete this.items[itemIdx];
-                speedIncrease = speedIncrease + 0.005;
             }
         });
         this.setupItems();
+
+        // Check if any bullets should disapear
+        this.bullets.forEach((bullet, bulletIdx) => {
+            if (bullet.y < - GAME_HEIGHT) {
+                delete this.bullets[bulletIdx];
+            }
+        });
+
+        this.setupBullets();
+
+        this.killEnemy();
 
         this.gainLife();
 
@@ -342,8 +373,14 @@ class Engine {
         }
     }
 
-    shootBullets() {
-
+    killEnemy() {
+        this.bullets.forEach((bullet, bulletIdx) => {
+            this.enemies.forEach((enemy, enemyIdx) => {
+            if (this.bullets[bulletIdx].doCollide(enemy)) {
+                    delete this.enemies[enemyIdx];
+            }
+        })
+    })
     }
 }
 
