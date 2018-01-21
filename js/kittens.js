@@ -38,6 +38,12 @@ var animationSpeed = 300;
 var timeSinceSwitch = 0;
 var animationSwitch = true;
 
+// Storing the things
+var bullets = [];
+var items = [];
+var enemies = [];
+
+
 // Preload game images
 var images = {};
 ['enemy.png', 'player.png', 'heart.png', 'noheart.png', 'bigheart.png', 'explosion.png', 'bg.png', 'bullet.png',].forEach(imgName => {
@@ -47,7 +53,19 @@ var images = {};
 });
 
 
+// Mapping lists with objects
+var listMap = {
+    Enemy: enemies,
+    Item: items,
+    Bullet: bullets
+};
 
+// Mapping max with objects
+var maxMap = {
+    Enemy: MAX_ENEMIES,
+    Item: MAX_ITEMS,
+    Bullet: MAX_ITEMS //TODO Change This
+};
 
 
 // This section is where you will be doing most of your coding
@@ -70,6 +88,7 @@ class Entity {
 }
 
 class Enemy extends Entity{
+
     constructor(xPos) {
         super();
         this.x = xPos;
@@ -77,6 +96,7 @@ class Enemy extends Entity{
         this.sprite = images['enemy.png'];
         this.width = ENEMY_WIDTH;
         this.height = ENEMY_HEIGHT;
+        this.max = MAX_ENEMIES;
 
         // Each enemy should have a different speed
         //this.speed = Math.random() / 2 + 0.25; //Original Speed
@@ -93,6 +113,7 @@ class Item extends Entity{
         this.height = ITEM_HEIGHT;
         this.sprite = images['bigheart.png'];
         this.speed = Math.random() / 4 + speedIncrease;
+        this.max = MAX_ITEMS;
     }
 }
 
@@ -105,6 +126,7 @@ class Bullet extends Entity{
         this.height = ITEM_HEIGHT;
         this.sprite = images['bullet.png'];
         this.speed = - 3;
+        this.max = MAX_LIVES;
     }
 }
 
@@ -143,10 +165,9 @@ class Engine {
         // Setup the player
         this.player = new Player();
 
-        // Setup enemies, making sure there are always three
-        this.setupEnemies();
-        this.setupItems();
-        this.setupBullets();
+        // Setup entities
+        this.setupElements(Enemy);
+        this.setupElements(Item);
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -161,64 +182,34 @@ class Engine {
     }
 
     /*
-     The game allows for 5 horizontal slots where an enemy can be present.
-     At any point in time there can be at most MAX_ENEMIES enemies otherwise the game would be impossible
+     The game allows for 5 horizontal slots where an element can be present.
+     At any point in time there can be at most maxNum enemies otherwise the game would be impossible
      */
-    setupEnemies() {
-        if (!this.enemies) {
-            this.enemies = [];
-        }
 
-        while (this.enemies.filter(e => !!e).length < MAX_ENEMIES) {
-            this.addEnemy();
+    setupElements(objClass) {
+        var objectList = listMap[objClass.name];
+        var maxNum = maxMap[objClass.name];
+
+        while (objectList.filter(e => !!e).length <  maxNum) {
+            this.addElement(objClass);
         }
     }
 
-    // This method finds a random spot where there is no enemy, and puts one in there
-    addEnemy() {
-        var enemySpots = GAME_WIDTH / ENEMY_WIDTH;
+    // This method finds a random spot where there is no item, and puts one in there
 
-        var enemySpot;
+    addElement(objClass) {
+        var elementSpots = GAME_WIDTH / ITEM_WIDTH;
+        var objectList = listMap[objClass.name];
+
+        var elementSpot;
         // Keep looping until we find a free enemy spot at random
-        while (enemySpot == undefined || this.enemies[enemySpot]) {
-            enemySpot = Math.floor(Math.random() * enemySpots);
+        while (elementSpot == undefined || objectList[elementSpot]) {
+            elementSpot = Math.floor(Math.random() * elementSpots);
         }
 
-        this.enemies[enemySpot] = new Enemy(enemySpot * ENEMY_WIDTH);
+        objectList[elementSpot] = new objClass(elementSpot * ITEM_WIDTH);
     }
-
-    setupItems() {
-        if (!this.items) {
-            this.items = [];
-        }
-
-        while (this.items.filter(e => !!e).length < MAX_ITEMS) {
-            this.addItem();
-        }
-    }
-
-    addItem() {
-        var itemSpots = GAME_WIDTH / ITEM_WIDTH;
-
-        var itemSpot;
-        
-        while (itemSpot == undefined || this.items[itemSpot]) {
-            itemSpot = Math.floor(Math.random() * itemSpots);
-        }
-
-        this.items[itemSpot] = new Item(itemSpot * ITEM_WIDTH);
-    }
-
-    setupBullets(){
-        if (!this.bullets) {
-            this.bullets = [];
-        }
-    }
-
-    addBullet() {
-        this.bullets[this.bullets.length] = new Bullet(this.player.x);
-    }
-        
+       
 
     // This method kicks off the game
     start() {
@@ -235,7 +226,7 @@ class Engine {
                 this.player.move(MOVE_RIGHT);
             }
             else if (e.keyCode === TOP_ARROW_CODE) {
-                this.addBullet();
+                this.shoot();
             }
             else {
                 location.reload();
@@ -267,44 +258,42 @@ class Engine {
         //Speed Increase
         speedIncrease = speedIncrease + speedIncrement;
 
-        // Call update on all enemies
-        this.enemies.forEach(enemy => enemy.update(timeDiff));
-        this.items.forEach(item => item.update(timeDiff));
-        this.bullets.forEach(bullet => bullet.update(timeDiff));
+        // Call update on all entities
+        enemies.forEach(enemy => enemy.update(timeDiff));
+        items.forEach(item => item.update(timeDiff));
+        bullets.forEach(bullet => bullet.update(timeDiff));
 
         // Draw everything!
         this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
-        this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
-        this.items.forEach(item => item.render(this.ctx)); // draw the Items
-        this.bullets.forEach(bullet => bullet.render(this.ctx)); // draw the Items
+        enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
+        items.forEach(item => item.render(this.ctx)); // draw the Items
+        bullets.forEach(bullet => bullet.render(this.ctx)); // draw the Items
         this.player.render(this.ctx); // draw the player
 
         // Check if any enemies should die
-        this.enemies.forEach((enemy, enemyIdx) => {
+        enemies.forEach((enemy, enemyIdx) => {
             if (enemy.y > GAME_HEIGHT) {
-                delete this.enemies[enemyIdx];
+                delete enemies[enemyIdx];
             }
         });
-        this.setupEnemies();
+        this.setupElements(Enemy);
 
 
         // Check if any item should disapear
-        this.items.forEach((item, itemIdx) => {
+        items.forEach((item, itemIdx) => {
             if (item.y > GAME_HEIGHT) {
-                delete this.items[itemIdx];
+                delete items[itemIdx];
             }
         });
-        this.setupItems();
+        this.setupElements(Item);
 
         // Check if any bullets should disapear
-        this.bullets.forEach((bullet, bulletIdx) => {
+        bullets.forEach((bullet, bulletIdx) => {
             if (bullet.y < - GAME_HEIGHT) {
-                delete this.bullets[bulletIdx];
-                this.bullets.splice(1,bulletIdx);
+                delete bullets[bulletIdx];
+                bullets.splice(1,bulletIdx);
             }
         });
-
-        this.setupBullets();
 
         this.killEnemy();
 
@@ -355,9 +344,9 @@ class Engine {
 
     isPlayerDead() {
         var isDead = false;
-        this.enemies.forEach((enemy, enemyIdx) => {
+        enemies.forEach((enemy, enemyIdx) => {
             if (this.player.doCollide(enemy)) {
-                    delete this.enemies[enemyIdx];
+                    delete enemies[enemyIdx];
                     this.lives = this.lives - 1;
                     isDead = true;
                     this.explosionTimeout = 30;
@@ -368,9 +357,9 @@ class Engine {
 
     gainLife() {
         if (this.lives < MAX_LIVES) {
-            this.items.forEach((item, itemIdx) => {
+            items.forEach((item, itemIdx) => {
                 if (this.player.doCollide(item)) {
-                    delete this.items[itemIdx];
+                    delete items[itemIdx];
                     this.lives = this.lives + 1;
                 }
             })
@@ -378,13 +367,18 @@ class Engine {
     }
 
     killEnemy() {
-        this.bullets.forEach((bullet, bulletIdx) => {
-            this.enemies.forEach((enemy, enemyIdx) => {
-            if (this.bullets[bulletIdx].doCollide(enemy)) {
-                    delete this.enemies[enemyIdx];
+        bullets.forEach((bullet, bulletIdx) => {
+            enemies.forEach((enemy, enemyIdx) => {
+            if (bullets[bulletIdx].doCollide(enemy)) {
+                    delete enemies[enemyIdx];
+                    enemies.splice(1,enemyIdx);
             }
         })
     })
+    }
+
+    shoot() {
+        bullets[bullets.length] = new Bullet(this.player.x);
     }
 }
 
