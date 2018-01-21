@@ -10,6 +10,7 @@ var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 var MAX_LIVES = 3;
 var STARTING_LIVES = 3;
+var COOLDOWN_SHOOT = 500;
 
 var ITEM_WIDTH = 75;
 var ITEM_HEIGHT = 75;
@@ -42,6 +43,7 @@ var animationSwitch = true;
 var bullets = [];
 var items = [];
 var enemies = [];
+
 
 
 // Preload game images
@@ -117,6 +119,7 @@ class Item extends Entity{
     }
 }
 
+
 class Bullet extends Entity{
     constructor(xPos) {
         super();
@@ -126,7 +129,6 @@ class Bullet extends Entity{
         this.height = ITEM_HEIGHT;
         this.sprite = images['bullet.png'];
         this.speed = - 3;
-        this.max = MAX_LIVES;
     }
 }
 
@@ -138,9 +140,18 @@ class Player extends Entity{
         this.height = PLAYER_HEIGHT;
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
         this.sprite = images['player.png'];
+        this.bullets = 5;
+        this.cooldownShoot = 0;
+        
     }
 
-
+    shoot() {
+        if (this.cooldownShoot <= 0 && this.bullets > 0) {
+            bullets[bullets.length] = new Bullet(this.x);
+            this.bullets = this.bullets - 1;
+            this.cooldownShoot = COOLDOWN_SHOOT;
+        }
+    }
 
     // This method is called by the game engine when left/right arrows are pressed
     move(direction) {
@@ -185,7 +196,6 @@ class Engine {
      The game allows for 5 horizontal slots where an element can be present.
      At any point in time there can be at most maxNum enemies otherwise the game would be impossible
      */
-
     setupElements(objClass) {
         var objectList = listMap[objClass.name];
         var maxNum = maxMap[objClass.name];
@@ -195,8 +205,7 @@ class Engine {
         }
     }
 
-    // This method finds a random spot where there is no item, and puts one in there
-
+    // This method finds a random spot where there is no element, and puts one in there
     addElement(objClass) {
         var elementSpots = GAME_WIDTH / ITEM_WIDTH;
         var objectList = listMap[objClass.name];
@@ -208,6 +217,15 @@ class Engine {
         }
 
         objectList[elementSpot] = new objClass(elementSpot * ITEM_WIDTH);
+    }
+
+    //Check if anything should disapear
+    disapearElements(lst) {
+        lst.forEach((enemy, enemyIdx) => {
+            if (enemy.y > GAME_HEIGHT) {
+                delete lst[enemyIdx];
+            }
+        });
     }
        
 
@@ -226,7 +244,7 @@ class Engine {
                 this.player.move(MOVE_RIGHT);
             }
             else if (e.keyCode === TOP_ARROW_CODE) {
-                this.shoot();
+                this.player.shoot();
             }
             else {
                 location.reload();
@@ -270,33 +288,13 @@ class Engine {
         bullets.forEach(bullet => bullet.render(this.ctx)); // draw the Items
         this.player.render(this.ctx); // draw the player
 
-        // Check if any enemies should die
-        enemies.forEach((enemy, enemyIdx) => {
-            if (enemy.y > GAME_HEIGHT) {
-                delete enemies[enemyIdx];
-            }
-        });
+
+        this.disapearElements(enemies);
         this.setupElements(Enemy);
-
-
-        // Check if any item should disapear
-        items.forEach((item, itemIdx) => {
-            if (item.y > GAME_HEIGHT) {
-                delete items[itemIdx];
-            }
-        });
-        this.setupElements(Item);
-
-        // Check if any bullets should disapear
-        bullets.forEach((bullet, bulletIdx) => {
-            if (bullet.y < - GAME_HEIGHT) {
-                delete bullets[bulletIdx];
-                bullets.splice(1,bulletIdx);
-            }
-        });
-
         this.killEnemy();
 
+        this.disapearElements(items);
+        this.setupElements(Item);
         this.gainLife();
 
         // Check if the player is exploding
@@ -340,6 +338,10 @@ class Engine {
             animationSwitch = !animationSwitch;
             timeSinceSwitch = timeSinceSwitch - animationSpeed;
         }
+        //Shooting Cooldown
+            if (this.player.cooldownShoot > 0) {
+            this.player.cooldownShoot = this.player.cooldownShoot - timeDiff;
+        }
     }
 
     isPlayerDead() {
@@ -366,20 +368,16 @@ class Engine {
         }
     }
 
-    killEnemy() {
+
+     killEnemy() {
         bullets.forEach((bullet, bulletIdx) => {
             enemies.forEach((enemy, enemyIdx) => {
-            if (bullets[bulletIdx].doCollide(enemy)) {
-                    delete enemies[enemyIdx];
-                    enemies.splice(1,enemyIdx);
-            }
+                if (bullets[bulletIdx].doCollide(enemy)) {
+                        delete enemies[enemyIdx];
+                }
+            })
         })
-    })
-    }
-
-    shoot() {
-        bullets[bullets.length] = new Bullet(this.player.x);
-    }
+    }  
 }
 
 
