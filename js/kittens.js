@@ -9,8 +9,7 @@ var MAX_ENEMIES = 3;
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 var MAX_LIVES = 3;
-var STARTING_LIVES = 3;
-var COOLDOWN_SHOOT = 500;
+var COOLDOWN_SHOOT = 300;
 
 var ITEM_WIDTH = 75;
 var ITEM_HEIGHT = 75;
@@ -41,14 +40,15 @@ var animationSwitch = true;
 
 // Storing the things
 var bullets = [];
-var items = [];
+var oneUps = [];
+var ammos = [];
 var enemies = [];
 
 
 
 // Preload game images
 var images = {};
-['enemy.png', 'player.png', 'heart.png', 'noheart.png', 'bigheart.png', 'explosion.png', 'bg.png', 'bullet.png',].forEach(imgName => {
+['enemy.png', 'player.png', 'heart.png', 'noheart.png', 'bigheart.png', 'explosion.png', 'bg.png', 'bullet.png', 'gun.png',].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -58,14 +58,16 @@ var images = {};
 // Mapping lists with objects
 var listMap = {
     Enemy: enemies,
-    Item: items,
+    OneUp: oneUps,
+    Ammo: ammos,
     Bullet: bullets
 };
 
 // Mapping max with objects
 var maxMap = {
     Enemy: MAX_ENEMIES,
-    Item: MAX_ITEMS,
+    OneUp: MAX_ITEMS,
+    Ammo: MAX_ITEMS,
     Bullet: MAX_ITEMS //TODO Change This
 };
 
@@ -106,7 +108,7 @@ class Enemy extends Entity{
     }
 }
 
-class Item extends Entity{
+class OneUp extends Entity{
     constructor(xPos) {
         super();
         this.x = xPos;
@@ -114,6 +116,19 @@ class Item extends Entity{
         this.width = ITEM_WIDTH;
         this.height = ITEM_HEIGHT;
         this.sprite = images['bigheart.png'];
+        this.speed = Math.random() / 4 + speedIncrease;
+        this.max = MAX_ITEMS;
+    }
+}
+
+class Ammo extends Entity{
+    constructor(xPos) {
+        super();
+        this.x = xPos;
+        this.y = -ITEM_HEIGHT;
+        this.width = ITEM_WIDTH;
+        this.height = ITEM_HEIGHT;
+        this.sprite = images['gun.png'];
         this.speed = Math.random() / 4 + speedIncrease;
         this.max = MAX_ITEMS;
     }
@@ -140,15 +155,15 @@ class Player extends Entity{
         this.height = PLAYER_HEIGHT;
         this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
         this.sprite = images['player.png'];
-        this.bullets = 5;
+        this.ammunitions = 5;
         this.cooldownShoot = 0;
         
     }
 
     shoot() {
-        if (this.cooldownShoot <= 0 && this.bullets > 0) {
+        if (this.cooldownShoot <= 0 && this.ammunitions > 0) {
             bullets[bullets.length] = new Bullet(this.x);
-            this.bullets = this.bullets - 1;
+            this.ammunitions = this.ammunitions - 1;
             this.cooldownShoot = COOLDOWN_SHOOT;
         }
     }
@@ -178,7 +193,8 @@ class Engine {
 
         // Setup entities
         this.setupElements(Enemy);
-        this.setupElements(Item);
+        this.setupElements(OneUp);
+        this.setupElements(Ammo);
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -232,7 +248,7 @@ class Engine {
     // This method kicks off the game
     start() {
         this.score = 0;
-        this.lives = STARTING_LIVES;
+        this.lives = MAX_LIVES;
         this.lastFrame = Date.now();
 
         // Listen for keyboard left/right and update the player
@@ -278,13 +294,15 @@ class Engine {
 
         // Call update on all entities
         enemies.forEach(enemy => enemy.update(timeDiff));
-        items.forEach(item => item.update(timeDiff));
+        oneUps.forEach(oneUp => oneUp.update(timeDiff));
+        ammos.forEach(ammo => ammo.update(timeDiff));
         bullets.forEach(bullet => bullet.update(timeDiff));
 
         // Draw everything!
         this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
         enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
-        items.forEach(item => item.render(this.ctx)); // draw the Items
+        oneUps.forEach(oneUp => oneUp.render(this.ctx)); // draw the Items
+        ammos.forEach(ammo => ammo.render(this.ctx)); // draw the Items
         bullets.forEach(bullet => bullet.render(this.ctx)); // draw the Items
         this.player.render(this.ctx); // draw the player
 
@@ -293,9 +311,13 @@ class Engine {
         this.setupElements(Enemy);
         this.killEnemy();
 
-        this.disapearElements(items);
-        this.setupElements(Item);
+        this.disapearElements(oneUps);
+        this.setupElements(OneUp);
         this.gainLife();
+        this.gainAmmo();
+
+        this.disapearElements(ammos);
+        this.setupElements(Ammo);
 
         // Check if the player is exploding
         if (this.explosionTimeout > 0) {
@@ -325,6 +347,10 @@ class Engine {
             this.ctx.font = '500 30px "Oswald"';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score, 20, 40);
+
+            this.ctx.font = '300 30px "Oswald"';
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText("Ammo: " + this.player.ammunitions, 250, 40);
 
             // Set the time marker and redraw
             this.lastFrame = Date.now();
@@ -359,17 +385,26 @@ class Engine {
 
     gainLife() {
         if (this.lives < MAX_LIVES) {
-            items.forEach((item, itemIdx) => {
-                if (this.player.doCollide(item)) {
-                    delete items[itemIdx];
+            oneUps.forEach((oneUp, oneUpIdx) => {
+                if (this.player.doCollide(oneUp)) {
+                    delete oneUps[oneUpIdx];
                     this.lives = this.lives + 1;
                 }
             })
         }
     }
 
+    gainAmmo() {
+        ammos.forEach((ammo, ammoIdx) => {
+            if (this.player.doCollide(ammo)) {
+                delete ammos[ammoIdx];
+                this.player.ammunitions = this.player.ammunitions + 5;
+            }
+        })
+    }
 
-     killEnemy() {
+
+    killEnemy() {
         bullets.forEach((bullet, bulletIdx) => {
             enemies.forEach((enemy, enemyIdx) => {
                 if (bullets[bulletIdx].doCollide(enemy)) {
