@@ -29,6 +29,7 @@ var MOVE_LEFT = 'left';
 var MOVE_RIGHT = 'right';
 
 // Speed Variation
+var speedIncrement = 0.0001;
 var speedIncrease = 0.25;
 
 // Animations
@@ -263,6 +264,9 @@ class Engine {
         // Increase the score!
         this.score += timeDiff;
 
+        //Speed Increase
+        speedIncrease = speedIncrease + speedIncrement;
+
         // Call update on all enemies
         this.enemies.forEach(enemy => enemy.update(timeDiff));
         this.items.forEach(item => item.update(timeDiff));
@@ -279,7 +283,6 @@ class Engine {
         this.enemies.forEach((enemy, enemyIdx) => {
             if (enemy.y > GAME_HEIGHT) {
                 delete this.enemies[enemyIdx];
-                speedIncrease = speedIncrease + 0.004;
             }
         });
         this.setupEnemies();
