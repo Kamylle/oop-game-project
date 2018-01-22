@@ -31,7 +31,7 @@ var MOVE_LEFT = 'left';
 var MOVE_RIGHT = 'right';
 
 // Speed Variation
-var speedIncrement = 0.0001;
+var speedIncrement = 0.00003;
 var speedIncrease = 0.25;
 
 // Animations
@@ -408,12 +408,14 @@ class Engine {
 
     killEnemy() {
         bullets.forEach((bullet, bulletIdx) => {
-            enemies.forEach((enemy, enemyIdx) => {
-                if (bullets[bulletIdx].doCollide(enemy)) {
-                        delete enemies[enemyIdx];
-                        this.score += 1;
+            for (var i = 0; i < enemies.length; i++) {
+                if (enemies[i] != undefined && bullets[bulletIdx].doCollide(enemies[i])) {
+                    delete enemies[i];
+                    delete bullets[bulletIdx];
+                    this.score += 1;
+                    break;
                 }
-            })
+            }
         })
     }  
 }
