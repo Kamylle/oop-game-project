@@ -3,35 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link href="https://fonts.googleapis.com/css?family=Oswald:300,500" rel="stylesheet">
     <title>Dinostorm</title>
 
-    
-
     <style>
+        @font-face {
+            font-family: Pixeled;
+            src: url(fonts/Minecraftia.ttf);
+        }
         html {
             height: 100%;
+            background-color: #1b171f;
         }
         body {
             height: 100%;
             margin: 0;
-            background-image: url(images/space.jpg);
-            background-size: cover;
+            background-image: url(images/gradient_bg.jpg);
+            background-repeat: repeat-x;
         }
         div {
-            height: 100%;
             display: flex;
         }
         canvas {
             margin: auto;
         }
-
+        #trees {
+            position: absolute;
+            top: 270px;
+            height: 300px;
+            width: 100%;
+            background-image: url(images/palmtrees.png);
+            background-repeat: none;
+            background-position: center top;
+        }
 
     </style>
 </head>
 
 <body>
     <div id="app"></div>
+    <div id="trees"></div>
     <script src="js/kittens.js"></script>
 </body>
 </html>

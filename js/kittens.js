@@ -39,6 +39,9 @@ var timeBetweenBoss = 4000;
 var minTimeBetweenBoss = 20;
 var timeToBoss = timeBetweenBoss;
 
+// Scoring System
+var pointsEarned = 1;
+
 // Animations
 var explosionTimeout = 0;
 var animationSpeed = 300;
@@ -171,11 +174,22 @@ class Player extends Entity{
         this.x = 2 * PLAYER_WIDTH;
         this.width = PLAYER_WIDTH;
         this.height = PLAYER_HEIGHT;
-        this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
+        this.y = GAME_HEIGHT - PLAYER_HEIGHT - 5;
         this.sprite = images['player.png'];
         this.ammunitions = 5;
         this.cooldownShoot = 0;
+        this.direction = "right";
         
+    }
+
+    render(ctx) {
+        var frameX = (animationSwitch ? 0 : this.width);
+        if(this.direction == "right") {
+            ctx.drawImage(this.sprite, frameX, 0, this.width, this.height, this.x, this.y, this.width, this.height,);
+        }
+        if(this.direction == "left") {
+            ctx.drawImage(this.sprite, frameX, this.height, this.width, this.height, this.x, this.y, this.width, this.height,);
+        }
     }
 
     shoot() {
@@ -190,9 +204,11 @@ class Player extends Entity{
     move(direction) {
         if (direction === MOVE_LEFT && this.x > 0) {
             this.x = this.x - PLAYER_WIDTH;
+            this.direction = "left";
         }
         else if (direction === MOVE_RIGHT && this.x < GAME_WIDTH - PLAYER_WIDTH) {
             this.x = this.x + PLAYER_WIDTH;
+            this.direction = "right";
         }
     }
 }
@@ -292,9 +308,11 @@ class Engine {
         document.addEventListener('keydown', e => {
             if (e.keyCode === LEFT_ARROW_CODE) {
                 this.player.move(MOVE_LEFT);
+                this.player.direction = left;
             }
             else if (e.keyCode === RIGHT_ARROW_CODE) {
                 this.player.move(MOVE_RIGHT);
+                this.player.direction = right;
             }
             else if (e.keyCode === TOP_ARROW_CODE) {
                 this.player.shoot();
@@ -333,7 +351,7 @@ class Engine {
         bullets.forEach(bullet => bullet.update(timeDiff));
 
         // Draw everything!
-        this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
+        //this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
         enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
         oneUps.forEach(oneUp => oneUp.render(this.ctx)); // draw the one ups
         ammos.forEach(ammo => ammo.render(this.ctx)); // draw the ammo
@@ -362,15 +380,20 @@ class Engine {
         // Check if player is dead
         if (this.isPlayerDead() && this.lives == 0) {
             this.ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-            this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
+            //this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
             // If they are dead, then it's game over!
-            this.ctx.font = '300 26px "Oswald"';
+            this.ctx.font = '300 20px "Pixeled"';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText('Score : ' + this.score, 40, 250);
+            this.ctx.fillText('Score : ' + this.score, 120, 250);
 
-            this.ctx.font = '500 50px "Oswald"';
+            this.ctx.font = '500 48px "Pixeled"';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText('GAME OVER', 40, 220);
+            this.ctx.fillText('GAME OVER', 43, 220);
+
+            this.ctx.font = '500 16px "Pixeled"';
+            this.ctx.fillStyle = '#1b171f';
+            this.ctx.fillText('P r e s s   [ S P A C E ]   t o   r e s t a r t .', 35, 350);
+
         }
         else {
             // If player is not dead, then draw the score
@@ -378,13 +401,13 @@ class Engine {
             this.ctx.drawImage( this.lives > 1 ? images['heart.png'] : images['noheart.png'], 60, 55);
             this.ctx.drawImage( this.lives > 2 ? images['heart.png'] : images['noheart.png'], 100, 55);
 
-            this.ctx.font = '500 30px "Oswald"';
+            this.ctx.font = '500 20px "Pixeled"';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(this.score, 20, 40);
+            this.ctx.fillText(this.score + " pts", 25, 50);
 
-            this.ctx.font = '300 30px "Oswald"';
+            this.ctx.font = '300 20px "Pixeled"';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText("Ammo: " + this.player.ammunitions, 250, 40);
+            this.ctx.fillText("Ammo: " + this.player.ammunitions, 250, 50);
 
             // Set the time marker and redraw
             this.lastFrame = Date.now();
@@ -450,7 +473,9 @@ class Engine {
                             delete lst[i];
                         }
                         if (lst == enemies) {
-                            this.score += 1;
+                            this.score += pointsEarned;
+                            pointsEarned += 1;
+
                         }
                         break;
                     }
