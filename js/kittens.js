@@ -24,7 +24,9 @@ var EXPLOSION_HEIGHT = 75;
 var LEFT_ARROW_CODE = 37;
 var RIGHT_ARROW_CODE = 39;
 var TOP_ARROW_CODE = 38;
-var SPACEBAR_CODE = 33;
+var DOWN_ARROW_CODE = 40;
+var SPACEBAR_CODE = 32;
+var ENTER_CODE = 13;
 
 // These two constants allow us to DRY
 var MOVE_LEFT = 'left';
@@ -37,22 +39,25 @@ var speedIncrease = 0.25;
 // Time untill boss
 var timeBetweenBoss = 4000;
 var minTimeBetweenBoss = 20;
-var timeToBoss = timeBetweenBoss;
+var timeToBoss = timeBetweenBoss + minTimeBetweenBoss;
 
 // Scoring System
 var pointsEarned = 1;
 
 // Animations
-var explosionTimeout = 0;
+var playerExplosionTimeout = 0;
 var animationSpeed = 300;
 var timeSinceSwitch = 0;
 var animationSwitch = true;
+
+var explosionDisapearTimeout = 50;
 
 // Storing the things
 var bullets = [];
 var oneUps = [];
 var ammos = [];
 var enemies = [];
+var explosions = [];
 
 
 
@@ -165,6 +170,21 @@ class Bullet extends Entity{
         this.height = ITEM_HEIGHT;
         this.sprite = images['bullet.png'];
         this.speed = - 3;
+    }
+}
+
+class Explosion extends Entity{
+    constructor(xPos, yPos) {
+        super();
+        this.x = xPos;
+        this.y = yPos;
+        this.width = ITEM_WIDTH;
+        this.height = ITEM_HEIGHT;
+        this.sprite = images['explosion.png'];
+        this.explosionTimeout = explosionDisapearTimeout;
+    }
+    update(timeDiff) {
+        this.explosionTimeout = this.explosionTimeout - timeDiff;
     }
 }
 
@@ -298,6 +318,15 @@ class Engine {
         });
     }
 
+    disapearExplosions(lst) {
+        lst.forEach((item, itemIdx) => {
+            if (item.explosionTimeout <= 0) {
+                delete lst[itemIdx];
+                lst.splice(1, itemIdx);
+            }
+        })
+    }
+
     // This method kicks off the game
     start() {
         this.score = 0;
@@ -314,10 +343,10 @@ class Engine {
                 this.player.move(MOVE_RIGHT);
                 this.player.direction = right;
             }
-            else if (e.keyCode === TOP_ARROW_CODE) {
+            else if (e.keyCode === TOP_ARROW_CODE || e.keyCode === SPACEBAR_CODE) {
                 this.player.shoot();
             }
-            else {
+            else if (e.keyCode === ENTER_CODE) {
                 location.reload();
             }
         });
@@ -349,6 +378,7 @@ class Engine {
         oneUps.forEach(oneUp => oneUp.update(timeDiff));
         ammos.forEach(ammo => ammo.update(timeDiff));
         bullets.forEach(bullet => bullet.update(timeDiff));
+        explosions.forEach(explosion => explosion.update(timeDiff));
 
         // Draw everything!
         //this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
@@ -356,6 +386,7 @@ class Engine {
         oneUps.forEach(oneUp => oneUp.render(this.ctx)); // draw the one ups
         ammos.forEach(ammo => ammo.render(this.ctx)); // draw the ammo
         bullets.forEach(bullet => bullet.render(this.ctx)); // draw the Items
+        explosions.forEach(explosion => explosion.render(this.ctx)); // draw the Items
         this.player.render(this.ctx); // draw the player
 
 
@@ -371,10 +402,12 @@ class Engine {
         this.setupElements(Ammo);
         this.gainAmmo();
 
+        this.disapearExplosions(explosions);
+
         // Check if the player is exploding
-        if (this.explosionTimeout > 0) {
+        if (this.playerExplosionTimeout > 0) {
             this.ctx.drawImage(images['explosion.png'], 0, 0, 75, 75, this.player.x, this.player.y, 75, 75,);
-            this.explosionTimeout -= 1;
+            this.playerExplosionTimeout -= 1;
         }
 
         // Check if player is dead
@@ -388,11 +421,11 @@ class Engine {
 
             this.ctx.font = '500 48px "Pixeled"';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText('GAME OVER', 43, 220);
+            this.ctx.fillText('GAME OVER', 34, 220);
 
             this.ctx.font = '500 16px "Pixeled"';
             this.ctx.fillStyle = '#1b171f';
-            this.ctx.fillText('P r e s s   [ S P A C E ]   t o   r e s t a r t .', 35, 350);
+            this.ctx.fillText('P r e s s   [ S P A C E ]   t o   r e s t a r t .', 20, 350);
 
         }
         else {
@@ -437,7 +470,7 @@ class Engine {
                     delete enemies[enemyIdx];
                     this.lives -= 1;
                     isDead = true;
-                    this.explosionTimeout = 30;
+                    this.playerExplosionTimeout = 30;
             }
         })
         return isDead;
@@ -449,6 +482,7 @@ class Engine {
                 if (this.player.doCollide(oneUp)) {
                     delete oneUps[oneUpIdx];
                     this.lives += 1;
+                    this.score += 25;
                 }
             })
         }
@@ -459,6 +493,7 @@ class Engine {
             if (this.player.doCollide(ammo)) {
                 delete ammos[ammoIdx];
                 this.player.ammunitions += ADD_AMMO;
+                this.score += 10;
             }
         })
     }
@@ -468,6 +503,9 @@ class Engine {
             var checkKill = (lst) => {
                 for (var i = 0; i < lst.length; i++) {
                     if (lst[i] != undefined && bullets[bulletIdx] != undefined && bullets[bulletIdx].doCollide(lst[i])) {
+                        
+                        explosions[explosions.length + 1] = new Explosion(bullets[bulletIdx].x, bullets[bulletIdx].y);
+
                         delete bullets[bulletIdx];
                         if (!lst[i].isBoss) {
                             delete lst[i];
@@ -475,7 +513,9 @@ class Engine {
                         if (lst == enemies) {
                             this.score += pointsEarned;
                             pointsEarned += 1;
-
+                        } 
+                        else {
+                            this.score -= 100;
                         }
                         break;
                     }
