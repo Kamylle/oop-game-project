@@ -9,7 +9,9 @@ var MAX_ENEMIES = 3;
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
 var MAX_LIVES = 3;
-var COOLDOWN_SHOOT = 300;
+
+var COOLDOWN_SHOOT = 500;
+var ADD_AMMO = 3;
 
 var ITEM_WIDTH = 75;
 var ITEM_HEIGHT = 75;
@@ -287,7 +289,7 @@ class Engine {
         var timeDiff = currentFrame - this.lastFrame;
 
         // Increase the score!
-        this.score += timeDiff;
+        //this.score += timeDiff;
 
         //Speed Increase
         speedIncrease = speedIncrease + speedIncrement;
@@ -398,7 +400,7 @@ class Engine {
         ammos.forEach((ammo, ammoIdx) => {
             if (this.player.doCollide(ammo)) {
                 delete ammos[ammoIdx];
-                this.player.ammunitions = this.player.ammunitions + 5;
+                this.player.ammunitions = this.player.ammunitions + ADD_AMMO;
             }
         })
     }
@@ -409,6 +411,7 @@ class Engine {
             enemies.forEach((enemy, enemyIdx) => {
                 if (bullets[bulletIdx].doCollide(enemy)) {
                         delete enemies[enemyIdx];
+                        this.score += 1;
                 }
             })
         })
