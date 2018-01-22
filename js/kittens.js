@@ -239,9 +239,9 @@ class Engine {
 
     //Check if anything should disapear
     disapearElements(lst) {
-        lst.forEach((enemy, enemyIdx) => {
-            if (enemy.y > GAME_HEIGHT) {
-                delete lst[enemyIdx];
+        lst.forEach((item, itemIdx) => {
+            if (item.y > GAME_HEIGHT) {
+                delete lst[itemIdx];
             }
         });
     }
@@ -287,9 +287,6 @@ class Engine {
         // Check how long it's been since last frame
         var currentFrame = Date.now();
         var timeDiff = currentFrame - this.lastFrame;
-
-        // Increase the score!
-        //this.score += timeDiff;
 
         //Speed Increase
         speedIncrease = speedIncrease + speedIncrement;
@@ -405,17 +402,23 @@ class Engine {
         })
     }
 
-
     killEnemy() {
         bullets.forEach((bullet, bulletIdx) => {
-            for (var i = 0; i < enemies.length; i++) {
-                if (enemies[i] != undefined && bullets[bulletIdx].doCollide(enemies[i])) {
-                    delete enemies[i];
-                    delete bullets[bulletIdx];
-                    this.score += 1;
-                    break;
+            var checkKill = (lst) => {
+                for (var i = 0; i < lst.length; i++) {
+                    if (lst[i] != undefined && bullets[bulletIdx] != undefined && bullets[bulletIdx].doCollide(lst[i])) {
+                        delete lst[i];
+                        delete bullets[bulletIdx];
+                        if (lst == enemies) {
+                            this.score += 1;
+                        }
+                        break;
+                    }
                 }
             }
+            checkKill(enemies);
+            checkKill(oneUps);
+            checkKill(ammos);
         })
     }  
 }
