@@ -36,6 +36,7 @@ var speedIncrease = 0.25;
 
 // Time untill boss
 var timeBetweenBoss = 4000;
+var minTimeBetweenBoss = 20;
 var timeToBoss = timeBetweenBoss;
 
 // Animations
@@ -236,7 +237,7 @@ class Engine {
         while (objectList.filter(e => !!e).length < maxNum) {
             if (objClass == Enemy && timeToBoss <= 0) {
                 timeToBoss = timeBetweenBoss;
-                timeBetweenBoss = timeBetweenBoss * 0.95;
+                timeBetweenBoss = (timeBetweenBoss * 0.97) + minTimeBetweenBoss;
                 this.addBoss();
             }
             else {
