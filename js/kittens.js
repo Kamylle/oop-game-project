@@ -4,7 +4,7 @@ var GAME_HEIGHT = 500;
 
 var ENEMY_WIDTH = 75;
 var ENEMY_HEIGHT = 156;
-var MAX_ENEMIES = 2;
+var MAX_ENEMIES = 3;
 
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
@@ -121,6 +121,7 @@ class Boss extends BadGuys{
     constructor(xPos) {
         super(xPos);
         this.sprite = images['boss.png'];
+        this.isBoss = true;
     }
 }
 
@@ -179,7 +180,7 @@ class Player extends Entity{
     shoot() {
         if (this.cooldownShoot <= 0 && this.ammunitions > 0) {
             bullets[bullets.length] = new Bullet(this.x);
-            this.ammunitions = this.ammunitions - 1;
+            this.ammunitions -= 1;
             this.cooldownShoot = COOLDOWN_SHOOT;
         }
     }
@@ -322,7 +323,7 @@ class Engine {
         var timeDiff = currentFrame - this.lastFrame;
 
         //Speed Increase
-        speedIncrease = speedIncrease + speedIncrement;
+        speedIncrease += speedIncrement;
 
         // Call update on all entities
         enemies.forEach(enemy => enemy.update(timeDiff));
@@ -354,7 +355,7 @@ class Engine {
         // Check if the player is exploding
         if (this.explosionTimeout > 0) {
             this.ctx.drawImage(images['explosion.png'], 0, 0, 75, 75, this.player.x, this.player.y, 75, 75,);
-            this.explosionTimeout = this.explosionTimeout - 1;
+            this.explosionTimeout -= 1;
         }
 
         // Check if player is dead
@@ -398,7 +399,7 @@ class Engine {
         }
         //Shooting Cooldown
         if (this.player.cooldownShoot > 0) {
-            this.player.cooldownShoot = this.player.cooldownShoot - timeDiff;
+            this.player.cooldownShoot -= timeDiff;
         }
 
         //Boss Summoning
@@ -410,7 +411,7 @@ class Engine {
         enemies.forEach((enemy, enemyIdx) => {
             if (this.player.doCollide(enemy)) {
                     delete enemies[enemyIdx];
-                    this.lives = this.lives - 1;
+                    this.lives -= 1;
                     isDead = true;
                     this.explosionTimeout = 30;
             }
@@ -423,7 +424,7 @@ class Engine {
             oneUps.forEach((oneUp, oneUpIdx) => {
                 if (this.player.doCollide(oneUp)) {
                     delete oneUps[oneUpIdx];
-                    this.lives = this.lives + 1;
+                    this.lives += 1;
                 }
             })
         }
@@ -433,7 +434,7 @@ class Engine {
         ammos.forEach((ammo, ammoIdx) => {
             if (this.player.doCollide(ammo)) {
                 delete ammos[ammoIdx];
-                this.player.ammunitions = this.player.ammunitions + ADD_AMMO;
+                this.player.ammunitions += ADD_AMMO;
             }
         })
     }
@@ -443,8 +444,10 @@ class Engine {
             var checkKill = (lst) => {
                 for (var i = 0; i < lst.length; i++) {
                     if (lst[i] != undefined && bullets[bulletIdx] != undefined && bullets[bulletIdx].doCollide(lst[i])) {
-                        delete lst[i];
                         delete bullets[bulletIdx];
+                        if (!lst[i].isBoss) {
+                            delete lst[i];
+                        }
                         if (lst == enemies) {
                             this.score += 1;
                         }
