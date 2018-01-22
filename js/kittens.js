@@ -4,7 +4,7 @@ var GAME_HEIGHT = 500;
 
 var ENEMY_WIDTH = 75;
 var ENEMY_HEIGHT = 156;
-var MAX_ENEMIES = 3;
+var MAX_ENEMIES = 2;
 
 var PLAYER_WIDTH = 75;
 var PLAYER_HEIGHT = 54;
@@ -34,6 +34,10 @@ var MOVE_RIGHT = 'right';
 var speedIncrement = 0.00003;
 var speedIncrease = 0.25;
 
+// Time untill boss
+var timeBetweenBoss = 4000;
+var timeToBoss = timeBetweenBoss;
+
 // Animations
 var explosionTimeout = 0;
 var animationSpeed = 300;
@@ -50,7 +54,7 @@ var enemies = [];
 
 // Preload game images
 var images = {};
-['enemy.png', 'player.png', 'heart.png', 'noheart.png', 'bigheart.png', 'explosion.png', 'bg.png', 'bullet.png', 'gun.png',].forEach(imgName => {
+['enemy.png', 'player.png', 'heart.png', 'noheart.png', 'bigheart.png', 'explosion.png', 'bg.png', 'bullet.png', 'gun.png', 'boss.png',].forEach(imgName => {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -93,46 +97,56 @@ class Entity {
     }
 }
 
-class Enemy extends Entity{
-
+class BadGuys extends Entity{
     constructor(xPos) {
         super();
         this.x = xPos;
         this.y = -ENEMY_HEIGHT;
-        this.sprite = images['enemy.png'];
         this.width = ENEMY_WIDTH;
         this.height = ENEMY_HEIGHT;
         this.max = MAX_ENEMIES;
-
         // Each enemy should have a different speed
-        //this.speed = Math.random() / 2 + 0.25; //Original Speed
         this.speed = Math.random() / 3 + speedIncrease;
     }
 }
 
-class OneUp extends Entity{
+class Enemy extends BadGuys{
+    constructor(xPos) {
+        super(xPos);
+        this.sprite = images['enemy.png'];
+    }
+}
+
+class Boss extends BadGuys{
+    constructor(xPos) {
+        super(xPos);
+        this.sprite = images['boss.png'];
+    }
+}
+
+class Items extends Entity{
     constructor(xPos) {
         super();
         this.x = xPos;
         this.y = -ITEM_HEIGHT;
         this.width = ITEM_WIDTH;
         this.height = ITEM_HEIGHT;
-        this.sprite = images['bigheart.png'];
         this.speed = Math.random() / 4 + speedIncrease;
         this.max = MAX_ITEMS;
     }
 }
 
-class Ammo extends Entity{
+class OneUp extends Items{
     constructor(xPos) {
-        super();
-        this.x = xPos;
-        this.y = -ITEM_HEIGHT;
-        this.width = ITEM_WIDTH;
-        this.height = ITEM_HEIGHT;
+        super(xPos);
+        this.sprite = images['bigheart.png'];
+    }
+}
+
+class Ammo extends Items{
+    constructor(xPos) {
+        super(xPos);
         this.sprite = images['gun.png'];
-        this.speed = Math.random() / 4 + speedIncrease;
-        this.max = MAX_ITEMS;
     }
 }
 
@@ -218,9 +232,17 @@ class Engine {
         var objectList = listMap[objClass.name];
         var maxNum = maxMap[objClass.name];
 
-        while (objectList.filter(e => !!e).length <  maxNum) {
-            this.addElement(objClass);
+        while (objectList.filter(e => !!e).length < maxNum) {
+            if (objClass == Enemy && timeToBoss <= 0) {
+                timeToBoss = timeBetweenBoss;
+                timeBetweenBoss = timeBetweenBoss * 0.95;
+                this.addBoss();
+            }
+            else {
+                this.addElement(objClass);
+            }
         }
+        
     }
 
     // This method finds a random spot where there is no element, and puts one in there
@@ -237,6 +259,18 @@ class Engine {
         objectList[elementSpot] = new objClass(elementSpot * ITEM_WIDTH);
     }
 
+    addBoss() {
+        var elementSpots = GAME_WIDTH / ITEM_WIDTH;
+
+        var elementSpot;
+        // Keep looping until we find a free enemy spot at random
+        while (elementSpot == undefined || enemies[elementSpot]) {
+            elementSpot = Math.floor(Math.random() * elementSpots);
+        }
+
+        enemies[elementSpot] = new Boss(elementSpot * ITEM_WIDTH);
+    }
+
     //Check if anything should disapear
     disapearElements(lst) {
         lst.forEach((item, itemIdx) => {
@@ -245,7 +279,6 @@ class Engine {
             }
         });
     }
-       
 
     // This method kicks off the game
     start() {
@@ -300,8 +333,8 @@ class Engine {
         // Draw everything!
         this.ctx.drawImage(images['bg.png'], 0, 0); // draw the bg
         enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
-        oneUps.forEach(oneUp => oneUp.render(this.ctx)); // draw the Items
-        ammos.forEach(ammo => ammo.render(this.ctx)); // draw the Items
+        oneUps.forEach(oneUp => oneUp.render(this.ctx)); // draw the one ups
+        ammos.forEach(ammo => ammo.render(this.ctx)); // draw the ammo
         bullets.forEach(bullet => bullet.render(this.ctx)); // draw the Items
         this.player.render(this.ctx); // draw the player
 
@@ -313,10 +346,10 @@ class Engine {
         this.disapearElements(oneUps);
         this.setupElements(OneUp);
         this.gainLife();
-        this.gainAmmo();
 
         this.disapearElements(ammos);
         this.setupElements(Ammo);
+        this.gainAmmo();
 
         // Check if the player is exploding
         if (this.explosionTimeout > 0) {
@@ -364,9 +397,12 @@ class Engine {
             timeSinceSwitch = timeSinceSwitch - animationSpeed;
         }
         //Shooting Cooldown
-            if (this.player.cooldownShoot > 0) {
+        if (this.player.cooldownShoot > 0) {
             this.player.cooldownShoot = this.player.cooldownShoot - timeDiff;
         }
+
+        //Boss Summoning
+        timeToBoss -= timeDiff;
     }
 
     isPlayerDead() {
