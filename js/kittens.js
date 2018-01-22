@@ -425,7 +425,7 @@ class Engine {
 
             this.ctx.font = '500 16px "Pixeled"';
             this.ctx.fillStyle = '#1b171f';
-            this.ctx.fillText('P r e s s   [ S P A C E ]   t o   r e s t a r t .', 20, 350);
+            this.ctx.fillText('P r e s s   [ E N T E R ]   t o   r e s t a r t .', 20, 350);
 
         }
         else {
